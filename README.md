@@ -12,7 +12,7 @@ to support researchers with no other recourse.
     - In the top navigation menu, click "Clusters" and then "Cheaha Shell Access".
 2. Enter `mkdir ~/bin` to create a directory to store the script.
 3. Enter `cd ~/bin` to enter that directory.
-4. Enter `git clone https://gitlab.rc.uab.edu/rc-data-science/sinteractive-temporary-for-continuity.git ~/bin/sinteractive` to clone this repository into the folder `~/bin/sinteractive`.
+4. Enter `git clone https://github.com/kizziah4/sinteractive ~/bin/sinteractive` to clone this repository into the folder `~/bin/sinteractive`.
 5. Etner `cd sinteractive` to enter the new subfolder.
 6. Enter `chmod u+x sinteractive _interactive _interactive_screen` to make the scripts executable.
 
