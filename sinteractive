@@ -1,52 +1,53 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
-# Author: Pär Andersson (National Supercomputer Centre, Sweden)
-# Version: 0.3 2007-07-30
-#
-# 2011-06-23: Joerg Bornschein <bornschein@fias.uni-frankfurt.de>
-#   Make this script find its own path
+# vim: set fileencoding=utf-8
+# Copyright (c) 2007 Pär Andersson (National Supercomputer Centre, Sweden),
+# 2011 Joerg Bornschein <bornschein@fias.uni-frankfurt.de>,
+# 2014 Janne Blomqvist  <janne.blomqvist@aalto.fi>
 #
 # This will submit a batch script that starts screen on a node.
 # Then ssh is used to connect to the node and attach the screen.
 # The result is very similar to an interactive shell in PBS
 # (qsub -I)
 
-# Find our own path (linux specific)
-MYDIR="$( cd "$( dirname "$0" )" && pwd )"
-
-# or
-# MYDIR=/usr/local/bin
+MYDIR="$(dirname "$(readlink -f ${BASH_SOURCE[0]})")"
 
 # Batch Script that starts SCREEN
 BS=$MYDIR/_interactive
 # Interactive screen script
 IS=$MYDIR/_interactive_screen
 
+# Default partition (Change this to suit your site!)
+# The user can specify another partition explicitly, sbatch will take
+# the last one on the command line.
+DEFAULTPART=interactive
+
 # Submit the job and get the job id
-JOB=`sbatch --output=/dev/null --error=/dev/null $@ $BS 2>&1 \
+JOB=`sbatch --output=/dev/null --error=/dev/null -p $DEFAULTPART $@ $BS 2>&1 \
     | egrep -o -e "\b[0-9]+$"`
 
 # Make sure the job is always canceled
-trap "{ /usr/bin/scancel -Q $JOB; exit; }" SIGINT SIGTERM EXIT
+trap "{ scancel -q $JOB; exit; }" SIGINT SIGTERM EXIT
 
 echo "Waiting for JOBID $JOB to start"
-while true;do
-    sleep 1s
+while true; do
+  sleep 2
 
-    # Check job status
-    STATUS=`squeue -j $JOB -t PD,R -h -o %t`
+  # Check job status
+  STATUS=`squeue -j $JOB -t PD,R,CF -h -o %t`
+  #squeue -j $JOB -h -t PD,R,CF
 
-    if [ "$STATUS" = "R" ];then
-	# Job is running, break the while loop
-	break
-    elif [ "$STATUS" != "PD" ];then
-	echo "Job is not Running or Pending. Aborting"
-	scancel $JOB
-	exit 1
-    fi
+  if [ "$STATUS" = "R" ]; then
+    # Job is running, break the while loop
+    break
+  elif [ "$STATUS" != "PD" ] && [ "$STATUS" != "CF" ]; then
+    #echo "STATUS=$STATUS"
+    echo "Job is not in a Running(R), Pending(PD) or Creating(CF) status. Aborting"
+    scancel $JOB
+    exit 1
+  fi
 
-    echo -n "."
-
+  echo -n "."
 done
 
 # Determine the first node in the job:
